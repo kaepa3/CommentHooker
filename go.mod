@@ -1,4 +1,4 @@
-module commandhooker
+module chooker
 
 go 1.18
 
