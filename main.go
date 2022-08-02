@@ -4,7 +4,7 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 */
 package main
 
-import "chooker/cmd"
+import "github.com/kaepa3/chooker/cmd"
 
 func main() {
 	cmd.Execute()
