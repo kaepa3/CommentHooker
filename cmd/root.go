@@ -77,6 +77,7 @@ func createHook(path string) {
 		return
 	}
 	defer file.Close()
+	os.Chmod(fPath, 0777)
 	file.WriteString(message)
 }
 
