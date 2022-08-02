@@ -1,11 +1,8 @@
 #!/bin/sh
 
-branchPath=$(git symbolic-ref -q HEAD) # branchPath は refs/heads/feature/XXXX_YYYY のような文字列に
-branchName=${branchPath##*/} # 最後の / 以下を取得し、branchName は XXXX_YYYY のような文字列に
-issueNumber=$(echo $branchName | cut -d "_" -f 1) # "_" を delimiter として cut し、issueNumber は XXXX に
-firstLine=$(head -n1 $1)
+{{.CommitMsgString}}
 
-%s
+{{.WriteString}}
 
 # This hook includes three examples.  The first comments out the
 # "Conflicts:" part of a merge commit.
@@ -29,4 +26,3 @@ case "$2,$3" in
 
   *) ;;
 esac
-
