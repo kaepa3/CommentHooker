@@ -1,4 +1,4 @@
-module chooker
+module github.com/kaepa3/chooker
 
 go 1.18
 
