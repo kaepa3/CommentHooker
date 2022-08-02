@@ -127,8 +127,7 @@ commitMsg=${branchPath##*/}
 		return `
 branchPath=$(git symbolic-ref -q HEAD)
 branchName=${branchPath##*/}
-issueNumber=$(echo $branchName | cut -d "_" -f 1)
-commitMsg=$(head -n1 $1)
+commitMsg=$(echo $branchName | cut -d "_" -f 1)
 `
 	}
 }
