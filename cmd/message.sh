@@ -5,7 +5,7 @@ branchName=${branchPath##*/} # 最後の / 以下を取得し、branchName は X
 issueNumber=$(echo $branchName | cut -d "_" -f 1) # "_" を delimiter として cut し、issueNumber は XXXX に
 firstLine=$(head -n1 $1)
 
-sed -i "1s/^/($issueNumber) \n/" $1 # コミットメッセージの先頭に (XXXX) という文字列でブランチの情報を追加。
+%s
 
 # This hook includes three examples.  The first comments out the
 # "Conflicts:" part of a merge commit.

@@ -6,10 +6,12 @@ package cmd
 
 import (
 	_ "embed"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/spf13/cobra"
 )
@@ -48,6 +50,7 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.Flags().StringP("mode", "m", "basic", "add mode opt")
 }
 
 const (
@@ -60,16 +63,21 @@ const (
 var message string
 
 func action(cmd *cobra.Command, args []string) {
+	mode, err := cmd.Flags().GetString("mode")
+	if err != nil {
+		log.Println(err)
+	}
+	fmt.Println()
 	flg, path := findGitdir("./")
 	if !flg {
 		log.Println("git dir not found")
 		return
 	}
-	createHook(path)
+	createHook(path, mode)
 }
 
 //
-func createHook(path string) {
+func createHook(path string, mode string) {
 	fPath := filepath.Join(path, HooksDir, HookFile)
 	file, err := os.Create(fPath)
 	if err != nil {
@@ -77,8 +85,16 @@ func createHook(path string) {
 		return
 	}
 	defer file.Close()
-	os.Chmod(fPath, 0777)
-	file.WriteString(message)
+	shellText := fmt.Sprintf(message, getInsertShell())
+	file.WriteString(shellText)
+}
+func getInsertShell() string {
+	switch runtime.GOOS {
+	case "windows":
+		return ` sed -i  "1s/^/($issueNumber) \n/" $1 # コミットメッセージの先頭に (XXXX) という文字列でブランチの情報を追加。`
+	default:
+		return ` sed -i "" "1s/^/($issueNumber) \n/" $1 # コミットメッセージの先頭に (XXXX) という文字列でブランチの情報を追加。`
+	}
 }
 
 //
