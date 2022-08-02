@@ -60,8 +60,8 @@ const (
 	HookFile = "prepare-commit-msg"
 )
 
-//go:embed message.sh
-var message string
+//go:embed shellTemp.sh.temp
+var shelTemp string
 
 func action(cmd *cobra.Command, args []string) {
 	flg, path := findGitdir("./")
@@ -107,7 +107,7 @@ func createHook(path string, data *TemplateData) {
 	}
 	defer file.Close()
 
-	t, err := template.New("template").Parse(message)
+	t, err := template.New("template").Parse(shelTemp)
 	if err != nil {
 		log.Fatal(err)
 	}
