@@ -6,14 +6,15 @@ package cmd
 
 import (
 	_ "embed"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
+	"text/template"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -63,21 +64,41 @@ const (
 var message string
 
 func action(cmd *cobra.Command, args []string) {
-	mode, err := cmd.Flags().GetString("mode")
-	if err != nil {
-		log.Println(err)
-	}
-	fmt.Println()
 	flg, path := findGitdir("./")
 	if !flg {
 		log.Println("git dir not found")
 		return
 	}
-	createHook(path, mode)
+	data, err := createTemplateData(cmd.Flags())
+	if err != nil {
+		log.Println("git dir not found")
+		return
+	}
+	createHook(path, data)
+}
+
+type TemplateData struct {
+	CommitMsgString string
+	WriteString     string
+}
+
+func createTemplateData(flags *pflag.FlagSet) (*TemplateData, error) {
+	mode, err := flags.GetString("mode")
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	commentType := getCommentType(mode)
+	writingTxt := getInsertShell()
+	return &TemplateData{
+		CommitMsgString: commentType,
+		WriteString:     writingTxt,
+	}, nil
+
 }
 
 //
-func createHook(path string, mode string) {
+func createHook(path string, data *TemplateData) {
 	fPath := filepath.Join(path, HooksDir, HookFile)
 	file, err := os.Create(fPath)
 	if err != nil {
@@ -85,15 +106,39 @@ func createHook(path string, mode string) {
 		return
 	}
 	defer file.Close()
-	shellText := fmt.Sprintf(message, getInsertShell())
-	file.WriteString(shellText)
+
+	t, err := template.New("template").Parse(message)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err = t.Execute(file, data); err != nil {
+		log.Fatal(err)
+	}
 }
+
+func getCommentType(mode string) string {
+	switch mode {
+	case "bname":
+		return `
+branchPath=$(git symbolic-ref -q HEAD)
+commitMsg=${branchPath##*/}
+	`
+	default:
+		return `
+branchPath=$(git symbolic-ref -q HEAD)
+branchName=${branchPath##*/}
+issueNumber=$(echo $branchName | cut -d "_" -f 1)
+commitMsg=$(head -n1 $1)
+`
+	}
+}
+
 func getInsertShell() string {
 	switch runtime.GOOS {
 	case "windows":
-		return ` sed -i  "1s/^/($issueNumber) \n/" $1 # コミットメッセージの先頭に (XXXX) という文字列でブランチの情報を追加。`
+		return `sed -i  "1s/^/($commitMsg) \n/" $1`
 	default:
-		return ` sed -i "" "1s/^/($issueNumber) \n/" $1 # コミットメッセージの先頭に (XXXX) という文字列でブランチの情報を追加。`
+		return `sed -i "" "1s/^/($commitMsg) \n/" $1`
 	}
 }
 
