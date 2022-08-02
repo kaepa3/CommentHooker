@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func GetCommentTypeTest(t *testing.T) {
+func TestGetCommentType(t *testing.T) {
 	val1 := getCommentType("bname")
 	val2 := getCommentType("hoge")
-	assert.NotEqual(val1, val2)
+	assert.NotEqual(t, val1, val2)
 }
