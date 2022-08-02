@@ -5,6 +5,7 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	_ "embed"
 	"io/ioutil"
 	"log"
 	"os"
@@ -52,8 +53,11 @@ func init() {
 const (
 	GitDir   = ".git"
 	HooksDir = "hooks"
-	HookFile = "hooker"
+	HookFile = "prepare-commit-msg"
 )
+
+//go:embed message.sh
+var message string
 
 func action(cmd *cobra.Command, args []string) {
 	flg, path := findGitdir("./")
@@ -63,6 +67,8 @@ func action(cmd *cobra.Command, args []string) {
 	}
 	createHook(path)
 }
+
+//
 func createHook(path string) {
 	fPath := filepath.Join(path, HooksDir, HookFile)
 	file, err := os.Create(fPath)
@@ -71,9 +77,10 @@ func createHook(path string) {
 		return
 	}
 	defer file.Close()
-	file.WriteString("hoge")
+	file.WriteString(message)
 }
 
+//
 func findGitdir(path string) (bool, string) {
 	files, _ := ioutil.ReadDir(path)
 	for _, val := range files {
