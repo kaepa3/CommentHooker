@@ -51,7 +51,10 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	rootCmd.Flags().StringP("mode", "m", "basic", "add mode opt")
+	rootCmd.Flags().StringP("mode", "m", "basic", `commit message style
+"bname"= branch fullname
+"basic"= bitbucket issue No
+	`)
 }
 
 const (
