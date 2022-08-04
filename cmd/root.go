@@ -15,7 +15,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"text/template"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -154,7 +153,6 @@ var sc = bufio.NewScanner(os.Stdin)
 
 //
 func findGitdir(path string) (string, error) {
-	time.Sleep(time.Second * 1)
 	searchPath, err := filepath.Abs(path)
 	if err != nil {
 		return "", err
