@@ -5,13 +5,17 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"bufio"
 	_ "embed"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"text/template"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -67,11 +71,13 @@ const (
 var shelTemp string
 
 func action(cmd *cobra.Command, args []string) {
-	flg, path := findGitdir("./")
-	if !flg {
-		log.Println("git dir not found")
+	path, err := findGitdir("./")
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println("End App")
 		return
 	}
+
 	data, err := createTemplateData(cmd.Flags())
 	if err != nil {
 		log.Println("git dir not found")
@@ -144,13 +150,32 @@ func getInsertShell() string {
 	}
 }
 
+var sc = bufio.NewScanner(os.Stdin)
+
 //
-func findGitdir(path string) (bool, string) {
-	files, _ := ioutil.ReadDir(path)
+func findGitdir(path string) (string, error) {
+	time.Sleep(time.Second * 1)
+	searchPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	} else if searchPath == "/" {
+		return "", errors.New("owari")
+	}
+
+	files, err := ioutil.ReadDir(searchPath)
+	if err != nil {
+		return "", err
+	}
+
 	for _, val := range files {
 		if val.IsDir() && val.Name() == GitDir {
-			return true, filepath.Join(path, val.Name())
+			fullPath := filepath.Join(searchPath, val.Name())
+			fmt.Printf("%s ok? ->", fullPath)
+			sc.Scan()
+			if sc.Text() != "n" {
+				return fullPath, nil
+			}
 		}
 	}
-	return false, ""
+	return findGitdir(filepath.Join(searchPath, "../"))
 }
