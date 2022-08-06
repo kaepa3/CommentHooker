@@ -66,7 +66,7 @@ const (
 	HookFile = "prepare-commit-msg"
 )
 
-//go:embed shellTemp.sh.temp
+//go:embed resource/shellTemp.sh.temp
 var shelTemp string
 
 func action(cmd *cobra.Command, args []string) {
