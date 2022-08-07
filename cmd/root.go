@@ -58,6 +58,7 @@ func init() {
 "bname"= branch fullname
 "basic"= bitbucket issue No
 	`)
+	rootCmd.Flags().BoolP("yes", "y", false, `ask yes about all question`)
 }
 
 const (
@@ -70,7 +71,8 @@ const (
 var shelTemp string
 
 func action(cmd *cobra.Command, args []string) {
-	path, err := findGitdir("./")
+
+	path, err := findGitdir(cmd.Flags(), "./")
 	if err != nil {
 		fmt.Println(err)
 		fmt.Println("End App")
@@ -96,6 +98,7 @@ func createTemplateData(flags *pflag.FlagSet) (*TemplateData, error) {
 		log.Println(err)
 		return nil, err
 	}
+
 	commentType := getCommentType(mode)
 	writingTxt := getInsertShell()
 	return &TemplateData{
@@ -152,7 +155,7 @@ func getInsertShell() string {
 var sc = bufio.NewScanner(os.Stdin)
 
 //
-func findGitdir(path string) (string, error) {
+func findGitdir(flags *pflag.FlagSet, path string) (string, error) {
 	searchPath, err := filepath.Abs(path)
 	if err != nil {
 		return "", err
@@ -168,12 +171,24 @@ func findGitdir(path string) (string, error) {
 	for _, val := range files {
 		if val.IsDir() && val.Name() == GitDir {
 			fullPath := filepath.Join(searchPath, val.Name())
-			fmt.Printf("%s ok? ->", fullPath)
-			sc.Scan()
-			if sc.Text() != "n" {
+			if isDirOk(flags, fullPath) {
 				return fullPath, nil
 			}
 		}
 	}
-	return findGitdir(filepath.Join(searchPath, "../"))
+	return findGitdir(flags, filepath.Join(searchPath, "../"))
+}
+
+func isDirOk(flags *pflag.FlagSet, fullPath string) bool {
+	ask, err := flags.GetBool("yes")
+	if err == nil && ask {
+		return true
+	}
+
+	fmt.Printf("%s ok? ->", fullPath)
+	sc.Scan()
+	if sc.Text() != "n" {
+		return true
+	}
+	return false
 }
