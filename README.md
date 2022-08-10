@@ -1,4 +1,7 @@
 # CommentHooker
+
+![chooker](./chooker.png "chooker")
+
 # 概要
 そのコマンドを叩くことで実行したカレントディレクトリから".git"フォルダの"hook"フォルダに"prepare-commit-msg"を書き込みます。
 記載内容からコミットログに指定の文字列を追加します。
