@@ -84,7 +84,11 @@ func action(cmd *cobra.Command, args []string) {
 		log.Println("git dir not found")
 		return
 	}
-	createHook(path, data)
+	fPath := filepath.Join(path, HooksDir, HookFile)
+	createHook(fPath, data)
+	if err = os.Chmod(fPath, 0777); err != nil {
+		log.Println(err)
+	}
 }
 
 type TemplateData struct {
@@ -109,8 +113,7 @@ func createTemplateData(flags *pflag.FlagSet) (*TemplateData, error) {
 }
 
 //
-func createHook(path string, data *TemplateData) {
-	fPath := filepath.Join(path, HooksDir, HookFile)
+func createHook(fPath string, data *TemplateData) {
 	file, err := os.Create(fPath)
 	if err != nil {
 		log.Println(err)
@@ -133,12 +136,14 @@ func getCommentType(mode string) string {
 		return `
 branchPath=$(git symbolic-ref -q HEAD)
 commitMsg=${branchPath##*/}
+firstLine=$(head -n1 $1)
 	`
 	default:
 		return `
 branchPath=$(git symbolic-ref -q HEAD)
 branchName=${branchPath##*/}
 commitMsg=$(echo $branchName | cut -d "_" -f 1)
+firstLine=$(head -n1 $1)
 `
 	}
 }
@@ -146,9 +151,17 @@ commitMsg=$(echo $branchName | cut -d "_" -f 1)
 func getInsertShell() string {
 	switch runtime.GOOS {
 	case "windows":
-		return `sed -i  "1s/^/($commitMsg) \n/" $1`
+		return `
+if [ -z "$firstLine"  ] ;then
+	sed -i  "1s/^/($commitMsg) \n/" $1
+fi
+`
 	default:
-		return `sed -i "" "1s/^/($commitMsg) \n/" $1`
+		return `
+if [ -z "$firstLine"  ] ;then
+	sed -i "" "1s/^/($commitMsg) \n/" $1
+fi
+`
 	}
 }
 
