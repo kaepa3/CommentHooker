@@ -58,6 +58,7 @@ func init() {
 "bname"= branch fullname
 "basic"= bitbucket issue No
 	`)
+	rootCmd.Flags().BoolP("yes", "y", false, `ask yes about all question`)
 }
 
 const (
@@ -70,7 +71,8 @@ const (
 var shelTemp string
 
 func action(cmd *cobra.Command, args []string) {
-	path, err := findGitdir("./")
+
+	path, err := findGitdir(cmd.Flags(), "./")
 	if err != nil {
 		fmt.Println(err)
 		fmt.Println("End App")
@@ -82,7 +84,11 @@ func action(cmd *cobra.Command, args []string) {
 		log.Println("git dir not found")
 		return
 	}
-	createHook(path, data)
+	fPath := filepath.Join(path, HooksDir, HookFile)
+	createHook(fPath, data)
+	if err = os.Chmod(fPath, 0777); err != nil {
+		log.Println(err)
+	}
 }
 
 type TemplateData struct {
@@ -96,6 +102,7 @@ func createTemplateData(flags *pflag.FlagSet) (*TemplateData, error) {
 		log.Println(err)
 		return nil, err
 	}
+
 	commentType := getCommentType(mode)
 	writingTxt := getInsertShell()
 	return &TemplateData{
@@ -106,8 +113,7 @@ func createTemplateData(flags *pflag.FlagSet) (*TemplateData, error) {
 }
 
 //
-func createHook(path string, data *TemplateData) {
-	fPath := filepath.Join(path, HooksDir, HookFile)
+func createHook(fPath string, data *TemplateData) {
 	file, err := os.Create(fPath)
 	if err != nil {
 		log.Println(err)
@@ -130,12 +136,14 @@ func getCommentType(mode string) string {
 		return `
 branchPath=$(git symbolic-ref -q HEAD)
 commitMsg=${branchPath##*/}
+firstLine=$(head -n1 $1)
 	`
 	default:
 		return `
 branchPath=$(git symbolic-ref -q HEAD)
 branchName=${branchPath##*/}
 commitMsg=$(echo $branchName | cut -d "_" -f 1)
+firstLine=$(head -n1 $1)
 `
 	}
 }
@@ -143,16 +151,24 @@ commitMsg=$(echo $branchName | cut -d "_" -f 1)
 func getInsertShell() string {
 	switch runtime.GOOS {
 	case "windows":
-		return `sed -i  "1s/^/($commitMsg) \n/" $1`
+		return `
+if [ -z "$firstLine"  ] ;then
+	sed -i  "1s/^/($commitMsg) \n/" $1
+fi
+`
 	default:
-		return `sed -i "" "1s/^/($commitMsg) \n/" $1`
+		return `
+if [ -z "$firstLine"  ] ;then
+	sed -i "" "1s/^/($commitMsg) \n/" $1
+fi
+`
 	}
 }
 
 var sc = bufio.NewScanner(os.Stdin)
 
 //
-func findGitdir(path string) (string, error) {
+func findGitdir(flags *pflag.FlagSet, path string) (string, error) {
 	searchPath, err := filepath.Abs(path)
 	if err != nil {
 		return "", err
@@ -168,12 +184,24 @@ func findGitdir(path string) (string, error) {
 	for _, val := range files {
 		if val.IsDir() && val.Name() == GitDir {
 			fullPath := filepath.Join(searchPath, val.Name())
-			fmt.Printf("%s ok? ->", fullPath)
-			sc.Scan()
-			if sc.Text() != "n" {
+			if isDirOk(flags, fullPath) {
 				return fullPath, nil
 			}
 		}
 	}
-	return findGitdir(filepath.Join(searchPath, "../"))
+	return findGitdir(flags, filepath.Join(searchPath, "../"))
+}
+
+func isDirOk(flags *pflag.FlagSet, fullPath string) bool {
+	ask, err := flags.GetBool("yes")
+	if err == nil && ask {
+		return true
+	}
+
+	fmt.Printf("%s ok? ->", fullPath)
+	sc.Scan()
+	if sc.Text() != "n" {
+		return true
+	}
+	return false
 }
