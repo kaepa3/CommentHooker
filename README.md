@@ -19,3 +19,8 @@ $ chooker -h
 ```
 
 # インストール
+以下のコマンドでインストール可能
+
+```bash
+$ go install github.com/kaepa3/chooker@vlatest
+```
